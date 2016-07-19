@@ -14,9 +14,10 @@ interface Arkuznet_Multiprocessing_Interface
     /**
      * Return named command line argument
      *
+     * @param string $name the argument name
      * @return string
      */
-    public function getArg();
+    public function getArg($name);
 
     /***
      * @param int $pages How many pages to split
@@ -105,7 +106,7 @@ trait Arkuznet_Multiprocessing
 
             $logTo = $logFilePath . $i . '.log';
 
-            $command[$i] = 'php ' . __FILE__ . ' ' . implode(' ', $parameters) . ' >' . $logTo;
+            $command[$i] = 'php ' . $_SERVER['SCRIPT_FILENAME'] . ' ' . implode(' ', $parameters) . ' >' . $logTo;
         }
 
         $handle = array();
