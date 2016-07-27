@@ -5,12 +5,13 @@
  */
 interface Arkuznet_Multiprocessing_Interface
 {
-    const IS_DEBUG_MODE = true;
-
     const ARG_PARENT_ID = 'parent_id';
     const ARG_PAGE_START = 'page_start';
     const ARG_PAGE_FINISH = 'page_finish';
+
     const ARG_LOG_TO = 'log_to';
+
+    const ARG_DEBUG_MODE = 'dbg';
 
     /**
      * Return named command line argument
@@ -47,6 +48,9 @@ interface Arkuznet_Multiprocessing_Interface
  */
 trait Arkuznet_Multiprocessing
 {
+
+    protected $_isDebugMode = false;
+
     /**
      * This the entry point
      * Call this method initializes the multiprocessing procedure
@@ -104,6 +108,9 @@ trait Arkuznet_Multiprocessing
 
         $command = array();
         $argument = array(static::ARG_PARENT_ID => getmypid());
+        if ($this->isDebugMode()) {
+            $argument[static::ARG_DEBUG_MODE] = '';
+        }
 
         foreach ($aBorders as $i => $aChunk) {
             $logTo = $logFilePath . $i . '.log';
@@ -121,7 +128,7 @@ trait Arkuznet_Multiprocessing
         foreach ($command as $run) {
             $this->log($run);
 
-            if (!static::IS_DEBUG_MODE) {
+            if (!$this->isDebugMode()) {
                 $handle[] = popen($run, "r");
             }
         }
@@ -148,6 +155,15 @@ trait Arkuznet_Multiprocessing
                 }
             }
         }
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isDebugMode()
+    {
+        $this->_isDebugMode = $this->getArg(static::ARG_DEBUG_MODE);
+        return $this->_isDebugMode;
     }
 
     /**
