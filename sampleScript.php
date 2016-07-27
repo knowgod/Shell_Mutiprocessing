@@ -30,7 +30,7 @@ class Arkuznet_Multiprocess_Sample extends Mage_Shell_Abstract
         if (!$this->isChild()) {
             $orders = $this->_getCollection();
 
-            $this->initMultiprocess(1, $orders->getLastPageNumber(), 4, Mage::getBaseDir('var') . DS . 'log' . DS . 'multiproc');
+            $this->initMultiprocess(1, $orders->getLastPageNumber(), 4, 'multiproc');
 
         } else {
             $this->initMultiprocess();
@@ -45,7 +45,7 @@ class Arkuznet_Multiprocess_Sample extends Mage_Shell_Abstract
         $start = $this->getArg(self::ARG_PAGE_START);
         $finish = $this->getArg(self::ARG_PAGE_FINISH);
 
-        $this->log(__METHOD__ . " [$start, $finish] start");////
+        $this->log(__METHOD__ . " [$start, $finish] start");
         for ($page = $start; $page <= $finish; ++$page) {
             $orders = $this->_getCollection($page, true);
 
@@ -59,7 +59,7 @@ class Arkuznet_Multiprocess_Sample extends Mage_Shell_Abstract
             $orders->getResource()->commit();
         }
         sleep(rand(1, 3));
-        $this->log(__METHOD__ . " [$start, $finish] finish");////
+        $this->log(__METHOD__ . " [$start, $finish] finish");
     }
 
     /**
@@ -81,10 +81,17 @@ class Arkuznet_Multiprocess_Sample extends Mage_Shell_Abstract
     }
 
     /**
-     * @param mixed $msq
+     * Use Magento default logger
+     * or echo using trait's method
+     *
+     * @param $msq
      */
     public function log($msq)
     {
+        $logFile = $this->getArg(static::ARG_LOG_TO);
+        if ($logFile) {
+            Mage::log($msq, Zend_log::INFO, $logFile, true);
+        }
         if (!is_scalar($msq)) {
             $msq = var_export($msq, true);
         }

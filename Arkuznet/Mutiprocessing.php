@@ -10,6 +10,7 @@ interface Arkuznet_Multiprocessing_Interface
     const ARG_PARENT_ID = 'parent_id';
     const ARG_PAGE_START = 'page_start';
     const ARG_PAGE_FINISH = 'page_finish';
+    const ARG_LOG_TO = 'log_to';
 
     /**
      * Return named command line argument
@@ -68,7 +69,8 @@ trait Arkuznet_Multiprocessing
             }
         } else {
             try {
-                $this->_dispatch($startPage, $endPage, $processes, $logFilePrefix);
+                $aProcesses = $this->_dispatch($startPage, $endPage, $processes, $logFilePrefix);
+                $this->_logProcesses($aProcesses);
             } catch (Exception $e) {
                 $this->log('Initialization failed: ' . $e->getMessage());
                 $output = false;
@@ -104,12 +106,13 @@ trait Arkuznet_Multiprocessing
         $argument = array(static::ARG_PARENT_ID => getmypid());
 
         foreach ($aBorders as $i => $aChunk) {
+            $logTo = $logFilePath . $i . '.log';
             $argument[static::ARG_PAGE_START] = array_shift($aChunk);
             $argument[static::ARG_PAGE_FINISH] = count($aChunk) ? array_pop($aChunk) : $argument[static::ARG_PAGE_START];
+            $argument[static::ARG_LOG_TO] = $logTo;
 
             $parameters = array_map(array($this, '_prepareArgument'), array_keys($argument), $argument);
 
-            $logTo = $logFilePath . $i . '.log';
 
             $command[$i] = 'php ' . $_SERVER['SCRIPT_FILENAME'] . ' ' . implode(' ', $parameters) . ' >' . $logTo;
         }
@@ -124,6 +127,27 @@ trait Arkuznet_Multiprocessing
         }
 
         return $handle;
+    }
+
+    /**
+     * Log subprocesses output
+     *
+     * @param array $handles
+     */
+    protected function _logProcesses(array $handles)
+    {
+        while (count($handles)) {
+            foreach ($handles as $i => $rPointer) {
+                if (is_resource($rPointer)) {
+                    if (!feof($rPointer)) {
+                        $this->log($i . ': ' . fgets($rPointer));
+                    } else {
+                        pclose($rPointer);
+                        unset($handles[$i]);
+                    }
+                }
+            }
+        }
     }
 
     /**
