@@ -50,12 +50,13 @@ trait Arkuznet_Multiprocessing
      * This the entry point
      * Call this method initializes the multiprocessing procedure
      *
-     * @param int $pages How many pages to split
+     * @param int $startPage Start from page
+     * @param int $endPage End at page
      * @param int $processes Number of process to split pages among
      * @param string $logFilePrefix
      * @return bool
      */
-    public function initMultiprocess($pages = 100, $processes = 4, $logFilePrefix = '')
+    public function initMultiprocess($startPage = 0, $endPage = 0, $processes = 4, $logFilePrefix = 'multiprocess')
     {
         $output = true;
         if ($this->isChild()) {
@@ -67,7 +68,7 @@ trait Arkuznet_Multiprocessing
             }
         } else {
             try {
-                $this->_dispatch($pages, $processes, $logFilePrefix);
+                $this->_dispatch($startPage, $endPage, $processes, $logFilePrefix);
             } catch (Exception $e) {
                 $this->log('Initialization failed: ' . $e->getMessage());
                 $output = false;
@@ -87,20 +88,24 @@ trait Arkuznet_Multiprocessing
     }
 
     /**
-     * @param int $pages How many pages to split
-     * @param int $processes Number of process to split pages among
+     * @param int $startPage Start from page
+     * @param int $endPage End at page
+     * @param int $processes Number of processes to split pages among
      * @param string $logFilePath
      * @return array
      */
-    protected function _dispatch($pages, $processes, $logFilePath)
+    protected function _dispatch($startPage, $endPage, $processes, $logFilePath = '')
     {
-        $perProcess = ceil($pages / $processes);
+        $perProcess = ceil(($endPage - $startPage + 1) / $processes);
+        $aPages = range($startPage, $endPage);
+        $aBorders = array_chunk($aPages, $perProcess);
 
-        $command = $argument = array();
-        for ($i = 0; $i < $processes; ++$i) {
-            $argument[static::ARG_PAGE_START] = $i * $perProcess;
-            $argument[static::ARG_PAGE_FINISH] = ($i + 1) * $perProcess - 1;
-            $argument[static::ARG_PARENT_ID] = getmypid();
+        $command = array();
+        $argument = array(static::ARG_PARENT_ID => getmypid());
+
+        foreach ($aBorders as $i => $aChunk) {
+            $argument[static::ARG_PAGE_START] = array_shift($aChunk);
+            $argument[static::ARG_PAGE_FINISH] = count($aChunk) ? array_pop($aChunk) : $argument[static::ARG_PAGE_START];
 
             $parameters = array_map(array($this, '_prepareArgument'), array_keys($argument), $argument);
 
